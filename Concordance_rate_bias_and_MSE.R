@@ -1,6 +1,6 @@
 ###Concordance rate, bias and MSE of naive estimation, univariate estimation, derived estimation
 ###and RC estimation
-###this program can reproduce simulations results in Table 5 of supplementary material
+###this program can reproduce simulations results in Table 5 of main text
 ###author: Zhiqiang CAO
 ###date: 2024.8.15
 
