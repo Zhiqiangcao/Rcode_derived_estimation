@@ -1,5 +1,5 @@
-###Bias from multivariate, univariate and derived regression four methods of estimation based on Cox regression
-###this program can reproduce simulations results in Table S4 of Web Appendix E
+###Bias from multivariate, univariate and derived  regression four methods of estimation based on linear regression
+###this program can reproduce simulations results in Table S3 of Web Appendix E
 #author: Zhiqiang Cao
 
 ##generate data
@@ -9,25 +9,19 @@ library(mvtnorm)
 library(MASS)
 
 ###############data generation################################
-gend = function(n,c,b,mut,covt,cove,beta_q){
+gend = function(n,b,mut,covt,cove,beta_q){
   b1 = b[1]; b2 = b[2]; b3 = b[3]
   #true variables
   datat = rmvnorm(n=n, mean=mut, sigma=covt)
   t1 = datat[,1]; t2 = datat[,2]; t3 = datat[,3] 
-  u = runif(n)
-  t = -log(u)/exp(b1*t1+b2*t2+b3*t3) #baseline hazard function lambda_0(t)=1
-  cen = runif(n, min=0, max=c)
-  delta = 1*(t<=cen)    
-  time = delta*t+(1-delta)*cen  #observed time
+  y = b1*t1+b2*t2+b3*t3+rnorm(n,0,sd=0.1) #plus a error term
   #error variables
   datae = rmvnorm(n=n, mean=c(0,0,0), sigma=cove) 
   e1 = datae[,1]; e2 = datae[,2]; e3 = datae[,3]
   #additive error model
-  x1 = beta_q[1]*t1+e1; x2 = beta_q[2]*t2+e2
-  x3 = beta_q[3]*t3+e3; 
+  x1 = beta_q[1]*t1+e1; x2 = beta_q[2]*t2+e2; x3 = beta_q[3]*t3+e3; 
   datat = data.frame(
-    t = time,
-    status = delta,
+    y = y,
     t1 = t1,
     t2 = t2,
     t3 = t3,
@@ -38,7 +32,6 @@ gend = function(n,c,b,mut,covt,cove,beta_q){
   return(datat)
 }
 
-
 ###parameter settings
 N = 1000  #simulation times
 n = 400   #sample size
@@ -46,9 +39,8 @@ n = 400   #sample size
 scenario_set = 1:2  
 for(scenario in scenario_set){
   if(scenario == 1){  #for male
-    trube = c(0.172,0.228,0.187) 
+    trube = c(0.172,0.228,0.187) #c(1,1.33,1.09)
     mut = c(9.356683,8.654661,11.937024) 
-    c = 0.005  #to produce 50% censoring rate
     beta_q = c(0.3667,0.4148,0.2762)
     sigma_t1 = sqrt(1.05927134)
     sigma_t2 = sqrt(0.676466609)
@@ -57,9 +49,8 @@ for(scenario in scenario_set){
     sigma_e2 = sqrt(0.8836357)
     sigma_e3 = sqrt(0.9131195)
   }else if(scenario == 2){ #for female
-    trube = c(0.160,0.112,0.074)
+    trube = c(0.160,0.112,0.074) #c(2.16,1,1.51)
     mux = c(9.245602,7.510393,11.167943)
-    c = 0.068  #to produce about 50% censoring rate
     beta_q = c(0.2980,0.2535,0.2515)
     sigma_t1 = sqrt(1.07312719)
     sigma_t2 = sqrt(1.07539124)
@@ -73,8 +64,7 @@ for(scenario in scenario_set){
   len_rhot = length(rho_t_set)
   rho_e_set = c(0.7,0.8,0.9,0.95)
   len_rhoe = length(rho_e_set)
-  b1e_n = b2e_n = b3e_n = b1e_un = b2e_un = b3e_un = matrix(0,len_rhoe,len_rhot)
-  b1e_d = b2e_d = b3e_d = b1e_r = b2e_r = b3e_r = matrix(0,len_rhoe,len_rhot)
+  b1e_n = b2e_n = b3e_n = b1e_un = b2e_un = b3e_un = b1e_d = b2e_d = b3e_d = matrix(0,len_rhoe,len_rhot)
   for(k in 1:len_rhot){
     rho_t = rho_t_set[k]
     for(j in 1:len_rhoe){
@@ -85,34 +75,34 @@ for(scenario in scenario_set){
       cove = matrix(c(sigma_e1^2,rho_e*sigma_e1*sigma_e2,rho_e*sigma_e1*sigma_e3,
                       rho_e*sigma_e2*sigma_e1,sigma_e2^2,rho_e*sigma_e2*sigma_e3,
                       rho_e*sigma_e3*sigma_e1,rho_e*sigma_e3*sigma_e2,sigma_e3^2),byrow=T,3,3)
-      naive = matrix(0,N,ncol = 3)
+      naive = ridge = matrix(0,N,ncol = 3)
       unive1 = unive2 = unive3 = derived1 = derived2 = derived3 = rep(N,0)
       for(i in 1:N){
         set.seed(123456+i)
-        dtaset = gend(n,c,trube,mut,covt,cove,beta_q)
-        t = dtaset[,1]; status = dtaset[,2]
-        t1 = dtaset[,3]; t2 = dtaset[,4]; t3 = dtaset[,5]
-        x1 = dtaset[,6]; x2 = dtaset[,7]; x3 = dtaset[,8] 
+        dtaset = gend(n,trube,mut,covt,cove,beta_q)
+        y = dtaset[,1]; 
+        t1 = dtaset[,2]; t2 = dtaset[,3]; t3 = dtaset[,4]
+        x1 = dtaset[,5]; x2 = dtaset[,6]; x3 = dtaset[,7] 
         #naive estimation
-        naive_cox = coxph(Surv(t,status)~x1+x2+x3) 
-        naive[i,] = naive_cox$coefficients
+        naive_lm = lm(y~x1+x2+x3)
+        naive[i,] = naive_lm$coefficients[2:4]
         #univariate regression
-        univ_cox1 = coxph(Surv(t,status)~x1)
-        unive1[i] = univ_cox1$coefficients
-        univ_cox2 = coxph(Surv(t,status)~x2)
-        unive2[i] = univ_cox2$coefficients
-        univ_cox3 = coxph(Surv(t,status)~x3)
-        unive3[i] = univ_cox3$coefficients
+        univ_lm1 = lm(y~x1)
+        unive1[i] = univ_lm1$coefficients[2]
+        univ_lm2 = lm(y~x2)
+        unive2[i] = univ_lm2$coefficients[2]
+        univ_lm3 = lm(y~x3)
+        unive3[i] = univ_lm3$coefficients[2]
         #derived estimation
         x2dx1 = x2/x1; x3dx1 = x3/x1
-        derive_cox1 = coxph(Surv(t,status)~x1+x2dx1+x3dx1)
-        derived1[i] = derive_cox1$coefficients[1]
+        derive_lm1 = lm(y~x1+x2dx1+x3dx1)
+        derived1[i] = derive_lm1$coefficients[2]
         x1dx2 = x1/x2; x3dx2 = x3/x2
-        derive_cox2 = coxph(Surv(t,status)~x2+x1dx2+x3dx2)
-        derived2[i] = derive_cox2$coefficients[1]
+        derive_lm2 = lm(y~x2+x1dx2+x3dx2)
+        derived2[i] = derive_lm2$coefficients[2]
         x1dx3 = x1/x3; x2dx3 = x2/x3
-        derive_cox3 = coxph(Surv(t,status)~x3+x1dx3+x2dx3)
-        derived3[i] = derive_cox3$coefficients[1]
+        derive_lm3 = lm(y~x3+x1dx3+x2dx3)
+        derived3[i] = derive_lm3$coefficients[2]
         #print(i)
       }
       #naive
@@ -128,6 +118,7 @@ for(scenario in scenario_set){
       b1e_d[j,k] = mean(derived1)
       b2e_d[j,k] = mean(derived2)
       b3e_d[j,k] = mean(derived3)
+      #print(c(j,k))
     }
   }
   ##summary: naive
@@ -161,11 +152,11 @@ for(scenario in scenario_set){
   bias_deriv3 = cbind(rho_e_set,bias_b3_deriv)
   colnames(bias_deriv1) = colnames(bias_deriv2) = colnames(bias_deriv3) = c("rho_e",paste0("rho_T=",seq(0.1,0.4,by=0.1)))
   rownames(bias_deriv1) = rownames(bias_deriv2) = rownames(bias_deriv3) = rep("Derived",4)
- 
+  
   bias_b1_res = rbind(bias_naive1,bias_univ1,bias_deriv1)
   bias_b2_res = rbind(bias_naive2,bias_univ2,bias_deriv2)
   bias_b3_res = rbind(bias_naive3,bias_univ3,bias_deriv3)
-  write.csv(round(bias_b1_res,3), paste0('mult_cox_bias_b1_',scenario,'.csv'))
-  write.csv(round(bias_b2_res,3), paste0('mult_cox_bias_b2_',scenario,'.csv'))
-  write.csv(round(bias_b3_res,3), paste0('mult_cox_bias_b3_',scenario,'.csv'))
+  write.csv(round(bias_b1_res,3), paste0('mult_lm_bias_b1_',scenario,'.csv'))
+  write.csv(round(bias_b2_res,3), paste0('mult_lm_bias_b2_',scenario,'.csv'))
+  write.csv(round(bias_b3_res,3), paste0('mult_lm_bias_b3_',scenario,'.csv'))
 }
