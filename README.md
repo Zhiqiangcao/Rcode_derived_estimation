@@ -5,16 +5,43 @@ The Rcode is to reproduce simulation results in "Reducing the effect of correlat
 For questions or comments about the code, please contact Zhiqiang Cao zcaoae@connect.ust.hk.  
 This folder includes the following functions:
 
-1 Bias_from_linear_regression.R can reproduce simulation results in Tables 2-3 of main text and Tables S1-S2 of Web Appendix E;
+The numerical study has two parts: 
 
-2.Bias_from_Cox_regression.R can reproduce simulation results in Table 4 of main text;
+Part (1) simulation
 
-3.real_data_ana.R can produce similar results in Table 5 of main text using masked epic data;
+R scripts: main_simulations.R, simulation_functions.R  
 
-4.Concordance_rate_bias_and_MSE.R can reproduce simulation results in Table 7 of main text;
+Run script main_simulations.R to produce Tables 2-4, 7 in manuscript and Tables S1-S8 in Web Appendix
 
-5.Bias_from_multivariate_linear_regression.R can reproduce simulation results in Table S3 of Web Appendix E;
+Script simulation_functions.R defines the functions used in the simulation studies.
 
-6.Bias_from_multivariate_Cox_regression.R can reproduce simulation results in Table S4 of Web Appendix E;
+(The result saved as "est_tabi.rds" (i=2,3,4,7) or "est_tabsj.rds" (j=1,2,3,4,5,6,7,8), which can be used to generate  Tables 2-4,7 and Tables S1-S8)
 
-7.Bias_under_multiplicative_error_model.R can reproduce simulation results in Table S5 of Web Appendix E.
+
+Part (2) data example
+
+R scripts: real_data_analysis.R, real_data_analysis_functions.R and epic_mask.R
+
+Data set:  epic_mask.Rdata and validation_mask.Rdata (The details of the mask procedure are provided in R script epic_mask.R)
+
+Run real_data_analysis.R to produce Tables 5-6 in manuscript
+
+Script real_data_analysis_functions.R defines the functions used in the real data analysis.
+
+(The result saved as "est_tab5.rds", "male_res.rds" and "female_res.rds", which can be used to generate Tables 5-6)
+
+
+
+Note (1): Tables and Figures are saved in the results folder.
+
+Note (2):  You will see warning messages when producing Table 4 and Table 7, the warning message may like this
+
+"In coxph.fit(X, Y, istrat, offset, init, control, weights = weights,  ... : Loglik converged before variable  2 ; coefficient may be infinite." 
+
+Note (3): Figure 1 of this paper is quoted from Figure 1(a) in the reference "Day, N.E., Wong, M.Y., Bingham, S., Khaw, K.T., Luben, 
+
+R., Michels, K.B., Welch, A., & Wareham, N.J.  (2004). Correlated measurement error-implications for nutritional epidemiology. Int J Epidemiol, 33, 1373-1381."
+
+
+
+
